@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InsureOps-ClaimFlow — Unified P&C Claims & L2 AMS Pipeline</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #111827;
+      --panel-alt: #182235;
+      --border: #26344d;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      background: #0f172a;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: 0.2px;
+    }
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .status-pills {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+    main {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .scenario-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .scenario-btn {
+      width: 100%;
+      text-align: left;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .scenario-btn:hover { border-color: var(--accent); }
+    .scenario-btn.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .scenario-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .scenario-badge {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .scenario-desc {
+      margin-top: 4px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    textarea {
+      width: 100%;
+      min-height: 230px;
+      background: #090e1a;
+      color: #cbd5e1;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      resize: vertical;
+    }
+    .run-btn {
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #082f49;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .run-btn:hover { filter: brightness(1.08); }
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 1120px) {
+      .pipeline-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .node-box {
+      border: 1px solid var(--border);
+      background: #0d1424;
+      border-radius: 8px;
+      padding: 10px;
+      opacity: 0.42;
+      transition: all 0.2s;
+    }
+    .node-box.visited {
+      opacity: 1;
+      background: var(--panel-alt);
+      border-color: var(--accent);
+    }
+    .node-box.status-PASSED, .node-box.status-COMPLETED { border-color: var(--green); }
+    .node-box.status-FAULT_DETECTED, .node-box.status-DENIED { border-color: var(--red); }
+    .node-box.status-ESCALATED { border-color: var(--amber); }
+    .node-layer {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .node-title {
+      font-weight: 700;
+      font-size: 0.84rem;
+      margin: 3px 0;
+    }
+    .node-meta {
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    .outcome-banner {
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel-alt);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .outcome-AUTO_APPROVED { border-color: var(--green); background: rgba(34, 197, 94, 0.1); }
+    .outcome-DENIED_EXCLUDED { border-color: var(--red); background: rgba(239, 68, 68, 0.1); }
+    .outcome-ESCALATED_HITL { border-color: var(--amber); background: rgba(245, 158, 11, 0.1); }
+    .outcome-L2_SUPPORT_TRIAGED { border-color: var(--purple); background: rgba(168, 85, 247, 0.12); }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 820px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+    pre {
+      margin: 0;
+      background: #090e1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      overflow-x: auto;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .trace-item {
+      border-left: 3px solid var(--accent);
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      background: #0d1424;
+      border-radius: 0 6px 6px 0;
+    }
+    .trace-item strong { font-size: 0.86rem; }
+    .trace-item p { margin: 3px 0 0; font-size: 0.8rem; color: var(--muted); }
+    .copy-btn {
+      float: right;
+      font-size: 0.72rem;
+      background: var(--panel-alt);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>InsureOps-ClaimFlow</h1>
+      <p>Outer Reliability Shell (InsuranceOps AMS) + Inner Domain Engine (ClaimFlow AI)</p>
+    </div>
+    <div class="status-pills">
+      <span class="pill" id="pill-health">Status: Connecting...</span>
+      <span class="pill" id="pill-mode">Mode: ...</span>
+      <span class="pill" id="pill-lancedb">LanceDB: ...</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>One-Click Demo Scenarios</h2>
+      <div class="scenario-list" id="scenario-list"></div>
+      <h2>FNOL Webhook JSON Payload</h2>
+      <textarea id="payload-editor" spellcheck="false"></textarea>
+      <button class="run-btn" id="run-btn">Run 5-Node LangGraph Pipeline</button>
+    </section>
+
+    <section class="right-col">
+      <div class="card">
+        <h2>Active Graph Path (5-Node LangGraph State Machine)</h2>
+        <div class="pipeline-grid" id="pipeline-grid">
+          <div class="node-box" data-node="node_1">
+            <div class="node-layer">InsuranceOps · Node 1</div>
+            <div class="node-title">Payload & Sync Gatekeeper</div>
+            <div class="node-meta" id="meta-node_1">Waiting</div>
+          </div>
+          <div class="node-box" data-node="node_2">
+            <div class="node-layer">ClaimFlow · Node 2</div>
+            <div class="node-title">Policy Coverage RAG</div>
+            <div class="node-meta" id="meta-node_2">Waiting</div>
+          </div>
+          <div class="node-box" data-node="node_3">
+            <div class="node-layer">ClaimFlow · Node 3</div>
+            <div class="node-title">Leakage & Risk Scorer</div>
+            <div class="node-meta" id="meta-node_3">Waiting</div>
+          </div>
+          <div class="node-box" data-node="node_4">
+            <div class="node-layer">ClaimFlow · Node 4</div>
+            <div class="node-title">Adjuster Copilot & Comms</div>
+            <div class="node-meta" id="meta-node_4">Waiting</div>
+          </div>
+          <div class="node-box" data-node="node_5">
+            <div class="node-layer">InsuranceOps · Node 5</div>
+            <div class="node-title">L2 Support Triage & RCA</div>
+            <div class="node-meta" id="meta-node_5">Waiting</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="outcome-banner" id="outcome-banner">
+        <div>
+          <strong id="outcome-title">Select a demo scenario to execute the pipeline</strong>
+          <div style="font-size:0.82rem; color:var(--muted);" id="outcome-subtitle">Active path and decision-level audit ID will appear here.</div>
+        </div>
+        <div class="pill" id="outcome-audit">Audit ID: —</div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h2 id="evidence-heading">Retrieved Policy Clause / Runbook SOP</h2>
+          <pre id="evidence-box">No run executed yet.</pre>
+        </div>
+        <div class="card">
+          <button class="copy-btn" id="copy-action-btn">Copy</button>
+          <h2 id="action-heading">Comms / Audit Brief / Safe Fix Patch</h2>
+          <pre id="action-box">No run executed yet.</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Node-by-Node Execution Trace</h2>
+        <div id="trace-timeline" style="font-size:0.84rem; color:var(--muted);">No trace yet.</div>
+      </div>
+
+      <div class="card">
+        <h2>Final Decision-Level Audit JSON</h2>
+        <pre id="raw-json">{}</pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let scenarios = [];
+
+    async function loadHealth() {
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        document.getElementById('pill-health').textContent = `Status: ${data.status.toUpperCase()}`;
+        document.getElementById('pill-mode').textContent = `Inference: ${data.inference_mode}`;
+        document.getElementById('pill-lancedb').textContent =
+          `LanceDB: ${data.policy_chunks} policy / ${data.runbook_chunks} SOP chunks`;
+      } catch (err) {
+        document.getElementById('pill-health').textContent = 'Status: Offline';
+      }
+    }
+
+    async function loadScenarios() {
+      const res = await fetch('/scenarios');
+      scenarios = await res.json();
+      const container = document.getElementById('scenario-list');
+      container.innerHTML = '';
+      scenarios.forEach((sc, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'scenario-btn';
+        btn.dataset.idx = idx;
+        btn.innerHTML = `
+          <div class="scenario-title">
+            <span>${idx + 1}. ${sc.title}</span>
+            <span class="scenario-badge">${sc.badge}</span>
+          </div>
+          <div class="scenario-desc">${sc.description}</div>
+        `;
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('payload-editor').value = JSON.stringify(sc.payload, null, 2);
+          runPipeline();
+        });
+        container.appendChild(btn);
+      });
+      if (scenarios.length > 0) {
+        container.querySelector('.scenario-btn').click();
+      }
+    }
+
+    function resetNodes() {
+      document.querySelectorAll('.node-box').forEach(el => {
+        el.className = 'node-box';
+        const id = el.dataset.node;
+        document.getElementById(`meta-${id}`).textContent = 'Skipped / Idle';
+      });
+    }
+
+    async function runPipeline() {
+      let payload;
+      try {
+        payload = JSON.parse(document.getElementById('payload-editor').value);
+      } catch (err) {
+        alert('Invalid JSON in payload editor: ' + err.message);
+        return;
+      }
+
+      const btn = document.getElementById('run-btn');
+      btn.textContent = 'Running LangGraph...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/process-claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        renderResult(data);
+      } finally {
+        btn.textContent = 'Run 5-Node LangGraph Pipeline';
+        btn.disabled = false;
+      }
+    }
+
+    function renderResult(data) {
+      resetNodes();
+      (data.execution_trace || []).forEach(step => {
+        const box = document.querySelector(`.node-box[data-node="${step.node_id}"]`);
+        if (box) {
+          box.classList.add('visited', `status-${step.status}`);
+          document.getElementById(`meta-${step.node_id}`).textContent =
+            `${step.status} (${step.duration_ms} ms)`;
+        }
+      });
+
+      const banner = document.getElementById('outcome-banner');
+      banner.className = `outcome-banner outcome-${data.final_outcome}`;
+      let headline = `${data.final_outcome} — Claim ${data.claim_id} (${data.policy_id})`;
+      if (data.adjuster_decision && data.final_outcome === 'AUTO_APPROVED') {
+        headline += ` · Net Payout: $${Number(data.adjuster_decision.net_payout).toFixed(2)}`;
+      }
+      if (data.l2_support_ticket) {
+        headline += ` · Ticket: ${data.l2_support_ticket.ticket_id} (${data.l2_support_ticket.severity})`;
+      }
+      document.getElementById('outcome-title').textContent = headline;
+      document.getElementById('outcome-subtitle').textContent =
+        `Active Path: ${(data.active_path || []).join(' → ')} | Backend: ${data.inference_mode}`;
+      document.getElementById('outcome-audit').textContent = `Audit ID: ${data.audit_record_id}`;
+
+      const evidenceHeading = document.getElementById('evidence-heading');
+      const evidenceBox = document.getElementById('evidence-box');
+      const actionHeading = document.getElementById('action-heading');
+      const actionBox = document.getElementById('action-box');
+
+      if (data.l2_support_ticket) {
+        const t = data.l2_support_ticket;
+        evidenceHeading.textContent = `AMS Runbook Citation (${t.matched_runbook_sop})`;
+        evidenceBox.textContent =
+          `Error Code: ${t.error_code}\nQueue: ${t.assigned_queue}\n\n` +
+          `Root Cause Analysis:\n${t.root_cause_analysis}\n\n` +
+          `Runbook Excerpt:\n${t.runbook_excerpt}`;
+        actionHeading.textContent = `Proposed Fix Patch (${t.patch_type} · Approval Required)`;
+        actionBox.textContent = t.proposed_patch;
+      } else if (data.policy_coverage) {
+        const c = data.policy_coverage;
+        evidenceHeading.textContent = `Policy Coverage Citation (${c.clause_citation})`;
+        evidenceBox.textContent =
+          `Status: ${c.coverage_status} | Sub-Limit: $${c.sub_limit} | Deductible: $${c.deductible}\n\n` +
+          `Reasoning:\n${c.reasoning}\n\nVerbatim Clause:\n${c.verbatim_excerpt}`;
+        if (data.adjuster_decision) {
+          const d = data.adjuster_decision;
+          actionHeading.textContent = d.human_review_required
+            ? 'HITL Adjuster Audit Brief'
+            : 'SmartCOMM Policyholder Notice';
+          actionBox.textContent = d.human_review_required
+            ? `${d.adjuster_audit_brief}\n\n--- Policyholder Holding Notice ---\n${d.policyholder_notice}`
+            : (d.policyholder_notice || d.adjuster_audit_brief || '');
+        }
+      }
+
+      const timeline = document.getElementById('trace-timeline');
+      timeline.innerHTML = (data.execution_trace || []).map(step => `
+        <div class="trace-item">
+          <strong>[${step.layer}] ${step.node_name} — ${step.status} (${step.duration_ms} ms)</strong>
+          <p>${step.summary}</p>
+        </div>
+      `).join('');
+
+      document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
+    }
+
+    document.getElementById('run-btn').addEventListener('click', runPipeline);
+    document.getElementById('copy-action-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(document.getElementById('action-box').textContent);
+    });
+
+    loadHealth();
+    loadScenarios();
+  </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+[
+  {
+    "scenario_id": "SCENARIO_01",
+    "title": "Standard Auto Glass Claim",
+    "badge": "Auto-Approved (STP)",
+    "description": "Clean FNOL payload, active PolicyCenter/ClaimCenter sync, covered under END-GLASS-01, low risk -> Straight-Through Processing payout.",
+    "expected_outcome": "AUTO_APPROVED",
+    "payload": {
+      "claim_id": "CLM-2026-1001",
+      "policy_id": "POL-CA-8841",
+      "policy_type": "CA-2026",
+      "endorsement_code": "END-GLASS-01",
+      "policy_inception_date": "2026-01-15",
+      "incident_date": "2026-11-10",
+      "loss_type": "auto_glass",
+      "claimed_amount": 1200.0,
+      "invoice_hash": "inv-hash-99481a",
+      "claimant_name": "Apex Fleet Logistics LLC",
+      "incident_description": "Highway stone impact cracked the front laminated windshield of commercial delivery van #14 during routine route."
+    }
+  },
+  {
+    "scenario_id": "SCENARIO_02",
+    "title": "Flood Damage Under Basic Fire Policy",
+    "badge": "Coverage Denied",
+    "description": "Clean FNOL payload on Basic Fire policy BF-2026, flood exclusion EX-FLD-09 triggered -> Denied with verbatim clause citation.",
+    "expected_outcome": "DENIED_EXCLUDED",
+    "payload": {
+      "claim_id": "CLM-2026-1002",
+      "policy_id": "POL-BF-5520",
+      "policy_type": "BF-2026",
+      "endorsement_code": "END-FIRE-01",
+      "policy_inception_date": "2025-11-01",
+      "incident_date": "2026-11-12",
+      "loss_type": "flood",
+      "claimed_amount": 18500.0,
+      "invoice_hash": "inv-hash-44102b",
+      "claimant_name": "Metro Storage Warehousing",
+      "incident_description": "Heavy monsoon surface water inundation entered ground-floor warehouse bays following storm drain overflow."
+    }
+  },
+  {
+    "scenario_id": "SCENARIO_03",
+    "title": "High-Value Theft 48 Hours Post-Inception",
+    "badge": "Escalated (HITL)",
+    "description": "Clean FNOL payload, covered theft peril, but incident occurred 48h after inception and claim is 84% of sub-limit -> Escalated to Human Adjuster.",
+    "expected_outcome": "ESCALATED_HITL",
+    "payload": {
+      "claim_id": "CLM-2026-1003",
+      "policy_id": "POL-CA-9902",
+      "policy_type": "CA-2026",
+      "endorsement_code": "END-COMP-02",
+      "policy_inception_date": "2026-11-18",
+      "incident_date": "2026-11-20",
+      "loss_type": "theft",
+      "claimed_amount": 42000.0,
+      "invoice_hash": "inv-hash-77319c",
+      "claimant_name": "Vanguard Freight Carriers",
+      "incident_description": "Box truck stolen overnight from unlit perimeter lot 48 hours after policy binding; high-value equipment reported inside."
+    }
+  },
+  {
+    "scenario_id": "SCENARIO_04",
+    "title": "Policy Status Mismatch (Billing ACTIVE vs Claims LAPSED)",
+    "badge": "L2 Support RCA + SQL Fix",
+    "description": "Node 1 detects PolicyCenter/Billing ACTIVE vs ClaimCenter LAPSED sync drift -> Bypass LLM claim engine -> Node 5 Jira RCA & SQL sync patch.",
+    "expected_outcome": "L2_SUPPORT_TRIAGED",
+    "payload": {
+      "claim_id": "CLM-2026-1004",
+      "policy_id": "POL-CA-7731",
+      "policy_type": "CA-2026",
+      "endorsement_code": "END-GLASS-01",
+      "policy_inception_date": "2026-03-01",
+      "incident_date": "2026-11-18",
+      "loss_type": "auto_glass",
+      "claimed_amount": 900.0,
+      "invoice_hash": "inv-hash-31094d",
+      "claimant_name": "Harbor Cold Chain Transport",
+      "incident_description": "Side passenger window shattered during loading dock maneuver; BillingCenter confirms premium settled."
+    }
+  },
+  {
+    "scenario_id": "SCENARIO_05",
+    "title": "Truncated Endorsement Code in FNOL Webhook",
+    "badge": "L2 Support RCA + JSON Patch",
+    "description": "Node 1 catches truncated endorsement_code ('END-GL') from API gateway adapter -> Node 5 retrieves SOP-AMS-002 & generates JSON schema patch.",
+    "expected_outcome": "L2_SUPPORT_TRIAGED",
+    "payload": {
+      "claim_id": "CLM-2026-1005",
+      "policy_id": "POL-CA-8841",
+      "policy_type": "CA-2026",
+      "endorsement_code": "END-GL",
+      "policy_inception_date": "2026-01-15",
+      "incident_date": "2026-11-19",
+      "loss_type": "auto_glass",
+      "claimed_amount": 850.0,
+      "invoice_hash": "inv-hash-88201e",
+      "claimant_name": "Apex Fleet Logistics LLC",
+      "incident_description": "Rear cargo door glass cracked by falling pallet; ACORD webhook truncated endorsement_code during ingestion."
+    }
+  }
+]
